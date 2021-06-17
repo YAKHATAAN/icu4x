@@ -16,8 +16,11 @@ use icu_provider_fs::export::fs_exporter;
 use icu_provider_fs::export::serializers;
 use icu_provider_fs::export::FilesystemExporter;
 use icu_provider_fs::manifest;
+use icu_provider_ppucd::get_all_ppucd_keys;
+use icu_provider_ppucd::PpucdDataProvider;
 use simple_logger::SimpleLogger;
-use std::path::PathBuf;
+use std::fs::read_to_string;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 fn main() -> anyhow::Result<()> {
@@ -110,6 +113,17 @@ fn main() -> anyhow::Result<()> {
                 .help("CLDR JSON locale subset; defaults to 'full'")
                 .takes_value(true),
         )
+
+        .arg(
+            Arg::with_name("PPUCD_PATH")
+                .long("ppucd-path")
+                .takes_value(true)
+                .value_name("PATH")
+                .help(
+                    "The path to a local copy of the ppucd.txt file"
+                )
+        )
+
         .arg(
             Arg::with_name("KEYS")
                 .short("k")
@@ -287,6 +301,17 @@ fn main() -> anyhow::Result<()> {
 
     export_cldr(cldr_paths.as_ref(), &mut exporter)?;
 
+
+    // Prerequisite setup commands:
+    //     cd $ICU4X/experimental/provider_ppucd
+    //     wget https://raw.githubusercontent.com/unicode-org/icu/master/icu4c/source/data/unidata/ppucd.txt
+    let ppucd_path = matches.value_of("PPUCD_PATH").unwrap_or("./experimental/provider_ppucd/ppucd.txt");
+    if !Path::new(ppucd_path).exists() {
+        anyhow::bail!("Path to ppucd.txt does not exist: {}", ppucd_path);
+    }
+    export_ppucd(ppucd_path, &mut exporter)?;
+    
+
     Ok(())
 }
 
@@ -303,6 +328,30 @@ fn export_cldr(
         // Ensure flush() is called, even when the result is an error
         exporter.flush()?;
         result?;
+    }
+
+    Ok(())
+}
+
+fn export_ppucd(
+    ppucd_path: &str,
+    exporter: &mut FilesystemExporter,
+) -> anyhow::Result<()> {
+    let keys = get_all_ppucd_keys();
+
+    let ppucd_file_str = read_to_string(Path::new(ppucd_path))?;
+
+    println!("size of PPUCD file = {}", ppucd_file_str.len());
+
+    let provider = PpucdDataProvider::new(&ppucd_file_str);
+    for key in keys.iter() {
+        log::info!("Writing key: {}", key);
+        let result = exporter.put_key_from_provider(key, &provider);
+        // Ensure flush() is called, even when the result is an error
+        exporter.flush()?;
+
+        // Keep going even if there is a problem parsing a property from PPUCD
+        // result?;
     }
 
     Ok(())
