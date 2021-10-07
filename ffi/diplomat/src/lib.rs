@@ -32,6 +32,7 @@ extern crate std as rust_std;
 
 extern crate alloc;
 
+pub mod codepointtrie;
 pub mod custom_writeable;
 pub mod decimal;
 pub mod fixed_decimal;

@@ -1054,6 +1054,7 @@ dependencies = [
  "dlmalloc",
  "fixed_decimal",
  "freertos-rust",
+ "icu_codepointtrie",
  "icu_decimal",
  "icu_locale_canonicalizer",
  "icu_locid",

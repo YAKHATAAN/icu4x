@@ -59,6 +59,7 @@ freertos = ["freertos-rust", "cortex-m"]
 
 [dependencies]
 fixed_decimal = { path = "../../utils/fixed_decimal" }
+icu_codepointtrie = { path = "../../utils/codepointtrie" }
 icu_decimal = { path = "../../components/decimal/" }
 icu_locale_canonicalizer = { path = "../../components/locale_canonicalizer" }
 icu_locid = { path = "../../components/locid" }
